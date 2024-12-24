@@ -210,7 +210,7 @@ async function deleteRequest(requestId) {
         });
 
         if (result.isConfirmed) {
-            const response = await fetch(`/requests/${requestId}`, {
+            const response = await fetch(`/dashboard/requests/${requestId}`, {
                 method: 'DELETE'
             });
 

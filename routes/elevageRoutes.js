@@ -179,16 +179,7 @@ const ensureBreeder = (req, res, next) => {
 // Routes
 
 
-// GET: Dashboard Breeding Page
-router.get('/dashboard/breedings', isAuthenticated, async (req, res) => {
-     try {
-         const elevages = await Elevage.find({ userId: req.user._id }).lean(); // Fetch all breedings
-         res.render('user/dashboard/elevage/elevage', { elevages, user: req.user });
-     } catch (error) {
-         console.error('Error fetching breedings:', error);
-         res.status(500).send('Erreur lors de la récupération des élevages.');
-     }
- });
+
 
 router.get('/dashboard/breedings/add', isAuthenticated, async (req, res) => {
      const elevage = await Elevage.findOne({ userId: req.user._id }).lean();
@@ -220,16 +211,7 @@ const generateSlug = (name, city) => {
 };
 
 // Routes
-// GET: Dashboard Breeding Page
-router.get('/dashboard/breedings', isAuthenticated, async (req, res) => {
-    try {
-        const elevages = await Elevage.find({ userId: req.user._id }).lean();
-        res.render('user/dashboard/elevage/elevage', { elevages, user: req.user });
-    } catch (error) {
-        console.error('Error fetching breedings:', error);
-        res.status(500).send('Erreur lors de la récupération des élevages.');
-    }
-});
+
 
 // GET: Add Breeding Page
 router.get('/dashboard/breedings/add', isAuthenticated, (req, res) => {

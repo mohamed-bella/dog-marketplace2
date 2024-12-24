@@ -649,6 +649,203 @@ document.addEventListener('keydown', (e) => {
 </style>
 </div>
 
+
+<!-- Pagination -->
+<div class="mt-12 flex justify-center px-4 sm:px-6">
+    <nav class="flex items-center gap-2" aria-label="Pagination">
+        <!-- Previous Page -->
+        <% if (pagination.hasPrev) { %>
+            <a href="?page=<%= pagination.current - 1 %><%= current.sort ? `&sort=${current.sort}` : '' %>"
+               class="inline-flex items-center px-4 h-10 text-sm text-slate-700 bg-white border border-slate-200 
+                      rounded-lg hover:bg-slate-50 hover:text-blue-600 transition-colors group">
+                <i class="fas fa-chevron-left text-xs mr-2 transition-transform group-hover:-translate-x-0.5"></i>
+                <span>Précédent</span>
+            </a>
+        <% } else { %>
+            <button disabled
+                    class="inline-flex items-center px-4 h-10 text-sm text-slate-400 bg-slate-50 border 
+                           border-slate-200 rounded-lg cursor-not-allowed">
+                <i class="fas fa-chevron-left text-xs mr-2"></i>
+                <span>Précédent</span>
+            </button>
+        <% } %>
+
+        <!-- Page Numbers - Desktop -->
+        <div class="hidden sm:flex items-center gap-1">
+            <% 
+            let startPage = Math.max(1, pagination.current - 2);
+            let endPage = Math.min(pagination.total, startPage + 4);
+            
+            if (endPage - startPage < 4) {
+                startPage = Math.max(1, endPage - 4);
+            }
+
+            // Show first page if not in range
+            if (startPage > 1) { %>
+                <a href="?page=1<%= current.sort ? `&sort=${current.sort}` : '' %>"
+                   class="inline-flex items-center justify-center w-10 h-10 text-sm text-slate-700 
+                          bg-white border border-slate-200 rounded-lg hover:bg-slate-50 
+                          hover:text-blue-600 transition-colors">
+                    1
+                </a>
+                <% if (startPage > 2) { %>
+                    <span class="px-2 text-slate-400">...</span>
+                <% } %>
+            <% } %>
+
+            <% for (let i = startPage; i <= endPage; i++) { %>
+                <% if (i === pagination.current) { %>
+                    <span class="inline-flex items-center justify-center w-10 h-10 text-sm font-medium 
+                                text-white bg-blue-600 rounded-lg">
+                        <%= i %>
+                    </span>
+                <% } else { %>
+                    <a href="?page=<%= i %><%= current.sort ? `&sort=${current.sort}` : '' %>"
+                       class="inline-flex items-center justify-center w-10 h-10 text-sm text-slate-700 
+                              bg-white border border-slate-200 rounded-lg hover:bg-slate-50 
+                              hover:text-blue-600 transition-colors">
+                        <%= i %>
+                    </a>
+                <% } %>
+            <% } %>
+
+            <!-- Show last page if not in range -->
+            <% if (endPage < pagination.total) { %>
+                <% if (endPage < pagination.total - 1) { %>
+                    <span class="px-2 text-slate-400">...</span>
+                <% } %>
+                <a href="?page=<%= pagination.total %><%= current.sort ? `&sort=${current.sort}` : '' %>"
+                   class="inline-flex items-center justify-center w-10 h-10 text-sm text-slate-700 
+                          bg-white border border-slate-200 rounded-lg hover:bg-slate-50 
+                          hover:text-blue-600 transition-colors">
+                    <%= pagination.total %>
+                </a>
+            <% } %>
+        </div>
+
+        <!-- Mobile Page Indicator -->
+        <div class="sm:hidden flex items-center gap-2">
+            <span class="text-sm text-slate-600">
+                Page <%= pagination.current %> sur <%= pagination.total %>
+            </span>
+        </div>
+
+        <!-- Next Page -->
+        <% if (pagination.hasNext) { %>
+            <a href="?page=<%= pagination.current + 1 %><%= current.sort ? `&sort=${current.sort}` : '' %>"
+               class="inline-flex items-center px-4 h-10 text-sm text-slate-700 bg-white border 
+                      border-slate-200 rounded-lg hover:bg-slate-50 hover:text-blue-600 
+                      transition-colors group">
+                <span>Suivant</span>
+                <i class="fas fa-chevron-right text-xs ml-2 transition-transform group-hover:translate-x-0.5"></i>
+            </a>
+        <% } else { %>
+            <button disabled
+                    class="inline-flex items-center px-4 h-10 text-sm text-slate-400 bg-slate-50 
+                           border border-slate-200 rounded-lg cursor-not-allowed">
+                <span>Suivant</span>
+                <i class="fas fa-chevron-right text-xs ml-2"></i>
+            </button>
+        <% } %>
+    </nav>
+</div>
+
+<style>
+/* Smooth transitions for pagination */
+.pagination-transition {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Active page pulse animation */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.pagination-active {
+    animation: pulse 2s infinite;
+}
+
+/* Improve touch targets on mobile */
+@media (max-width: 640px) {
+    .pagination-button {
+        min-height: 44px;
+    }
+}
+
+/* Focus states for accessibility */
+.pagination-focus:focus {
+    outline: 2px solid rgba(59, 130, 246, 0.5);
+    outline-offset: 2px;
+}
+
+/* Hover transitions */
+.hover\\:bg-slate-50 {
+    transition: background-color 0.2s ease;
+}
+
+.group:hover .group-hover\\:translate-x-0\\.5 {
+    transition: transform 0.2s ease;
+}
+</style>
+
+
+<style>
+/* Smooth transitions for pagination buttons */
+.pagination-btn-transition {
+    transition: all 0.2s ease-in-out;
+}
+
+/* Active page state */
+.pagination-active {
+    position: relative;
+}
+
+.pagination-active::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 2px;
+    background-color: currentColor;
+    border-radius: 2px;
+}
+
+/* Hover effect for buttons */
+@media (hover: hover) {
+    .hover\:bg-slate-100:hover {
+        transition: background-color 0.2s ease;
+    }
+}
+</style>
+
+<script>
+// Preserve other query parameters when changing pages
+document.addEventListener('DOMContentLoaded', () => {
+    const paginationLinks = document.querySelectorAll('nav[aria-label="Pagination"] a');
+    
+    paginationLinks.forEach(link => {
+        if (link.href === '#') return;
+        
+        const url = new URL(link.href);
+        const currentUrl = new URL(window.location.href);
+        const searchParams = new URLSearchParams(currentUrl.search);
+        
+        // Add all current query parameters except page
+        for (const [key, value] of searchParams.entries()) {
+            if (key !== 'page') {
+                url.searchParams.append(key, value);
+            }
+        }
+        
+        link.href = url.toString();
+    });
+});
+</script>
+
 <style>
 /* Smooth hover transitions */
 .group:hover .group-hover\:scale-105 {

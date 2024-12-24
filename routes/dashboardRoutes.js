@@ -18,7 +18,8 @@ const multer = require('multer');
 // Services routes
 router.get('/services', async (req, res) => {
     try {
-        const services = await Service.find({ serviceProvider: req.user._id });
+        const services = await Service.find({ createdBy: req.user._id });
+        console.log(services)
         res.render('user/dashboard/dashboard', { 
             page: 'services',
             unreadRequests,
@@ -284,6 +285,20 @@ router.get('/stats', isAuthenticated, async (req, res) => {
 });
 
 
+// GET: Dashboard Breeding Page
+router.get('/breedings', isAuthenticated, async (req, res) => {
+     try {
+         const elevages = await Elevage.find({ userId: req.user._id }).lean(); // Fetch all breedings
+         res.render('user/dashboard/dashboard', {
+            page: 'elevage',
+            elevages,
+             user: req.user
+        });
+     } catch (error) {
+         console.error('Error fetching breedings:', error);
+         res.status(500).send('Erreur lors de la récupération des élevages.');
+     }
+ });
 
 
 // routes/dashboardRoutes.js
@@ -371,6 +386,7 @@ router.get('/requests', async (req, res) => {
         res.redirect('/dashboard');
     }
 });
+
 
 // Update request status
 router.patch('/requests/:requestId/status', async (req, res) => {

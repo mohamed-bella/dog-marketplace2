@@ -480,10 +480,13 @@ router.get('/', async (req, res) => {
 });
 router.get('/services/:serviceOption?/:location?', async (req, res) => {
      try {
-          const { serviceOption = 'tous', location } = req.params;
-          const page = parseInt(req.query.page) || 1;
-          const limit = parseInt(req.query.limit) || 12;
-          const sort = req.query.sort || 'recent';
+        const { serviceOption = 'tous', location } = req.params;
+         
+          // Pagination parameters
+        const page = Math.max(1, parseInt(req.query.page) || 1); // Ensure minimum page is 1
+        const limit = parseInt(req.query.limit) || 12;
+        const sort = req.query.sort || 'recent';
+        const skip = (page - 1) * limit;
 
           // Build query
           const query = { isActive: true }; // Filter for active services
@@ -604,11 +607,11 @@ router.get('/services/:serviceOption?/:location?', async (req, res) => {
 
                // Pagination
                pagination: {
-                    current: page,
-                    total: Math.ceil(filteredServices.length / limit),
-                    hasNext: page * limit < filteredServices.length,
-                    hasPrev: page > 1
-               },
+                current: page,
+                total: Math.ceil(total / limit), // Use total from the database query for the correct page count
+                hasNext: page * limit < total, // Check against total documents instead of filteredServices.length
+                hasPrev: page > 1
+            },
 
                // Additional info
                stats: {
@@ -629,99 +632,7 @@ router.get('/services/:serviceOption?/:location?', async (req, res) => {
           });
      }
 });
-router.get('/srvc/:serviceOption?/:location?', async (req, res) => {
-     try {
-         const { serviceOption = 'tous', location } = req.params;
-         const page = parseInt(req.query.page, 10) || 1;
-         const limit = parseInt(req.query.limit, 10) || 12;
-         const sort = req.query.sort || 'recent';
- 
-         // Build query
-         const query = { isActive: true }; // Only fetch active services
-         if (serviceOption !== 'tous') {
-             query.serviceOptions = serviceOption.toLowerCase();
-         }
-         if (location) {
-             query.location = new RegExp(location, 'i'); // Case-insensitive regex
-         }
- 
-         // Determine sort configuration
-         const sortConfig = {
-             recent: { createdAt: -1 },
-             'price-asc': { priceRange: 1 },
-             'price-desc': { priceRange: -1 },
-             rating: { rating: -1 },
-         }[sort] || { createdAt: -1 };
- 
-         // Fetch services and count total for pagination
-         const [services, total] = await Promise.all([
-             Service.find(query)
-                 .populate({
-                     path: 'createdBy',
-                     match: { status: 'active' },
-                     select: 'displayName profileImage isVerified',
-                 })
-                 .sort(sortConfig)
-                 .skip((page - 1) * limit)
-                 .limit(limit)
-                 .lean(),
-             Service.countDocuments(query),
-         ]);
- 
-         // Filter out services without an approved provider
-         const filteredServices = services.filter(service => service.createdBy);
- 
-         // Process services data
-         const processedServices = filteredServices.map(service => ({
-             _id: service._id,
-             serviceName: service.serviceName || 'Service',
-             serviceOptions: service.serviceOptions || 'general',
-             images: service.images || [],
-             views: service.views || '0',
-             priceRange: service.priceRange ? `${service.priceRange} DH` : 'N/A',
-             location: service.location || 'Non spécifié',
-             createdBy: {
-                 displayName: service.createdBy.displayName || 'Expert',
-                 profileImage: service.createdBy.profileImage || 'https://img.icons8.com/ios-filled/50/000000/user-male-circle.png',
-                 isVerified: service.createdBy.isVerified || false,
-             },
-         }));
- 
-         // Unique locations for filters
-         const uniqueLocations = await Service.distinct('location', {
-             isActive: true,
-             serviceOptions: serviceOption === 'tous' ? { $exists: true } : serviceOption.toLowerCase(),
-         });
- 
-         // Prepare metadata
-         const pageTitle = location
-             ? `${serviceOption} à ${location} | NDRESSILIK`
-             : `${serviceOption} Services | NDRESSILIK`;
- 
-         const description = location
-             ? `Découvrez les meilleurs services de ${serviceOption} à ${location}. Réservez dès maintenant sur NDRESSILIK.`
-             : `Explorez les services de ${serviceOption} disponibles au Maroc sur NDRESSILIK.`;
- 
-         // Prepare response for frontend
-         res.json({
-             services: processedServices,
-             total,
-             hasMore: page * limit < total,
-             locations: uniqueLocations,
-             meta: {
-                 title: pageTitle,
-                 description,
-             },
-         });
-     } catch (error) {
-         console.error('Error fetching services:', error);
- 
-         // Send error response
-         res.status(500).json({
-             error: 'Une erreur est survenue lors du chargement des services. Veuillez réessayer plus tard.',
-         });
-     }
- });
+
  router.get('/api/services', async (req, res) => {
      try {
          const { page = 1, sort = 'recent', price_max, rating, categories } = req.query;
@@ -1031,12 +942,12 @@ router.post('/dashboard/services/:serviceId', isAuthenticated, upload, async (re
              });
          }
  
-         const { serviceName, description, minPrice, maxPrice, location, serviceType } = req.body;
+         const { serviceName, description, minPrice, location, serviceType } = req.body;
  
          // Parse price range from the current values
          let priceRange;
-         if (minPrice && maxPrice) {
-             priceRange = `${minPrice}-${maxPrice} DH`;
+         if (minPrice) {
+             priceRange = `${minPrice}`;
          } else {
              // Keep existing price range if new values aren't provided
              priceRange = service.priceRange;

@@ -577,298 +577,202 @@ const getDashboardStats = async (userId) => {
 // Updated dashboard route
 
 router.get('/dashboard', isAuthenticated, async (req, res) => {
-    try {
-        // Fetch user with select fields
-        const user = await User.findById(req.user._id)
-        .select('-password -__v')
-        .lean();
-
-   // Calculate missing fields for completion guide
-   const missingFields = [];
-   if (!user.displayName) missingFields.push('displayName');
-   if (!user.bio) missingFields.push('bio');
-   if (!user.location?.city) missingFields.push('city');
-   if (!user.phoneNumber) missingFields.push('phone');
-   if (!user.specializations?.length) missingFields.push('specializations');
-
-   // Calculate completion percentage
-   const completionPercentage = Math.round(
-        ((5 - missingFields.length) / 5) * 100
-   );
-
-   // Calculate service metrics
-   const totalServices = await Service.countDocuments({ createdBy: user._id });
-   const userServiceIds = await Service.find({ createdBy: user._id }).distinct('_id');
-   const totalReviews = await Review.countDocuments({ serviceId: { $in: userServiceIds } });
-
-   // Calculate average rating
-   const averageRatingResult = await Review.aggregate([
-        {
-             $match: {
-                  serviceId: { $in: userServiceIds }
+     try {
+         const userId = new ObjectId(req.user._id);
+ 
+         // Parallel data fetching for better performance
+         const [
+             userDetails,
+             servicesData,
+             reviewsData,
+             requestsData,
+             elevagesData,
+             consultationsData
+         ] = await Promise.all([
+             // 1. User Details with Profile Completion
+             User.findById(userId).select('-password -__v').lean(),
+ 
+             // 2. Services Aggregation
+             Service.aggregate([
+                 { $match: { createdBy: userId } },
+                 {
+                     $lookup: {
+                         from: 'reviews',
+                         localField: '_id',
+                         foreignField: 'serviceId',
+                         as: 'reviews'
+                     }
+                 },
+                 {
+                     $lookup: {
+                         from: 'reservations',
+                         localField: '_id',
+                         foreignField: 'serviceId',
+                         as: 'reservations'
+                     }
+                 },
+                 {
+                     $addFields: {
+                         averageRating: {
+                             $cond: [
+                                 { $gt: [{ $size: '$reviews' }, 0] },
+                                 { $avg: '$reviews.rating' },
+                                 0
+                             ]
+                         },
+                         totalReservations: { $size: '$reservations' },
+                         totalRevenue: {
+                             $sum: '$reservations.totalAmount'
+                         },
+                         isActive: { $ifNull: ['$isActive', false] }
+                     }
+                 }
+             ]),
+ 
+             // 3. Reviews Overview
+             Review.aggregate([
+                 {
+                     $match: {
+                         serviceId: {
+                             $in: await Service.find({ createdBy: userId }).distinct('_id')
+                         }
+                     }
+                 },
+                 {
+                     $group: {
+                         _id: null,
+                         totalReviews: { $sum: 1 },
+                         averageRating: { $avg: '$rating' },
+                         recentReviews: { $push: '$$ROOT' }
+                     }
+                 }
+             ]),
+ 
+             // 4. Pending Requests Count
+             Request.countDocuments({
+                 serviceProvider: userId,
+                 status: 'pending',
+                 isRead: false
+             }),
+ 
+             // 5. Elevages Data
+             Elevage.find({ userId }).lean(),
+ 
+             // 6. Consultations Overview
+             Consultation.aggregate([
+                 { $match: { assignedExpert: userId } },
+                 {
+                     $group: {
+                         _id: null,
+                         total: { $sum: 1 },
+                         pending: {
+                             $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+                         },
+                         completed: {
+                             $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
+                         }
+                     }
+                 }
+             ])
+         ]);
+ 
+         // Calculate profile completion
+         const requiredFields = [
+             { field: 'location.city', weight: 15 },
+             { field: 'specializations', weight: 20, isArray: true },
+             { field: 'languages', weight: 10, isArray: true },
+             { field: 'experience.description', weight: 15 },
+             { field: 'qualifications', weight: 15, isArray: true },
+             { field: 'gallery', weight: 15, isArray: true },
+             { field: 'bio', weight: 10 }
+         ];
+ 
+         let completedWeight = requiredFields.reduce((total, field) => {
+             const value = field.field.split('.').reduce((obj, key) => obj?.[key], userDetails);
+             if (field.isArray) {
+                 return total + (value && Array.isArray(value) && value.length > 0 ? field.weight : 0);
              }
-        },
-        {
-             $group: {
-                  _id: null,
-                  average: { $avg: '$rating' }
-             }
-        }
-   ]);
-   const averageRating = averageRatingResult[0]?.average || 0;
-
-   // Retrieve profile views from user.metrics
-   const profileViews = user.metrics?.profileViews || 0; // Ensure this field exists in your user model
-
-   // Format data for template
-   const viewData = {
-        page : 'quick',
-        user: {
-             ...user,
+             return total + (value && value !== '' ? field.weight : 0);
+         }, 0);
+ 
+         // Process services statistics
+         const servicesStats = {
+             total: servicesData.length,
+             active: servicesData.filter(s => s.isActive).length,
+             totalReservations: servicesData.reduce((acc, s) => acc + s.totalReservations, 0),
+             totalRevenue: servicesData.reduce((acc, s) => acc + (s.totalRevenue || 0), 0),
+             totalViews: servicesData.reduce((acc, s) => acc + (s.views || 0), 0)
+         };
+ 
+         // Process reviews data
+         const reviewsStats = reviewsData[0] || {
+             totalReviews: 0,
+             averageRating: 0,
+             recentReviews: []
+         };
+ 
+         // Process elevages statistics
+         const elevagesStats = {
+             totalPets: elevagesData.reduce((sum, elevage) => sum + (elevage.stats?.totalDogs || 0), 0),
+             activeLitters: elevagesData.reduce((sum, elevage) => sum + (elevage.stats?.availableDogs || 0), 0),
+             totalElevages: elevagesData.length
+         };
+ 
+         // Consultation stats
+         const consultationStats = consultationsData[0] || {
+             total: 0,
+             pending: 0,
+             completed: 0
+         };
+ 
+         // Render dashboard with processed data
+         res.render('user/dashboard/dashboard', {
+             pageTitle: 'Dashboard',
+             user: {
+                 ...userDetails,
+                 completionPercentage: Math.round(completedWeight)
+             },
+             // Data for actions grid
+            
+                 servicesCount: servicesStats.total,
+                 activeServices: servicesStats.active,
+                 pendingRequests: requestsData,
+                 reviewsCount: reviewsStats.totalReviews,
+                 averageRating: reviewsStats.averageRating.toFixed(1),
+                 totalViews: servicesStats.totalViews,
+            
+             // Statistics for cards
              stats: {
-                  views: profileViews,
-                  services: totalServices,
-                  reviews: totalReviews,
-                  rating: Number(averageRating.toFixed(1))
-             }
-        },
-        completionPercentage,
-        missingFields,
-        defaultProfileImage: 'https://images.unsplash.com/photo-1614850715973-58c3167b30a0',
-        path: 'profile',
-        breadcrumbs: [
-             { label: 'Dashboard', url: '/dashboard' },
-             { label: 'Profil', url: '#' }
-        ],
-       };
-        const specializations = [
-             { value: 'dog-training', label: 'Dressage', icon: 'fa-dog' },
-             { value: 'grooming', label: 'Toilettage', icon: 'fa-cut' },
-             { value: 'walking', label: 'Promenade', icon: 'fa-walking' },
-             { value: 'veterinary', label: 'Vétérinaire', icon: 'fa-stethoscope' },
-             { value: 'boarding', label: 'Pension', icon: 'fa-home' },
-             { value: 'transport', label: 'Transport', icon: 'fa-car' }
-        ]
-   
-
-   // Add verification status
-   if (user.status === 'pending') {
-        viewData.verificationPending = true;
-   }
-      // 1. Profile Completion Calculation
-const requiredFields = [
-    { field: 'location.city', label: 'Ajoutez votre localisation - أضف موقعك', link: '/dashboard/profile/#location', weight: 15 },
-    { field: 'specializations', label: 'Précisez vos spécialisations - حدد تخصصاتك', link: '/dashboard/profile/#specializations', weight: 20, isArray: true },
-    { field: 'languages', label: 'Listez les langues que vous parlez - اذكر اللغات التي تتحدثها', link: '/dashboard/profile/#languages', weight: 10, isArray: true },
-    { field: 'experience.description', label: 'Décrivez votre expérience - صِف تجربتك', link: '/dashboard/profile/#experience', weight: 15, notDefault: 'Sans Experience.' },
-    { field: 'qualifications', label: 'Ajoutez vos qualifications - أضف مؤهلاتك', link: '/dashboard/profile/#qualifications', weight: 15, isArray: true },
-    { field: 'gallery', label: 'Ajoutez des photos à votre galerie - أضف صورًا إلى معرضك', link: '/dashboard/profile/#gallery', weight: 15, isArray: true },
-    { field: 'bio', label: 'Ajoutez une biographie - أضف سيرتك الذاتية', link: '/dashboard/profile/#bio', weight: 10 }
-];
-
-
-        let completedWeight = 0;
-        const missingElements = [];
-
-        requiredFields.forEach(field => {
-            const value = field.field.split('.').reduce((obj, key) => obj?.[key], req.user);
-
-            if (field.isArray) {
-                if (!value || !Array.isArray(value) || value.length === 0) {
-                    missingElements.push({ label: field.label, link: field.link });
-                } else {
-                    completedWeight += field.weight;
-                }
-            } else if (field.notDefault) {
-                if (!value || value === field.notDefault) {
-                    missingElements.push({ label: field.label, link: field.link });
-                } else {
-                    completedWeight += field.weight;
-                }
-            } else {
-                if (!value || value === '') {
-                    missingElements.push({ label: field.label, link: field.link });
-                } else {
-                    completedWeight += field.weight;
-                }
-            }
-        });
-
-        // 2. Services Statistics
-        const services = await Service.aggregate([
-            {
-                $match: {
-                    createdBy: new ObjectId(req.user._id)
-                }
-            },
-            {
-                $lookup: {
-                    from: 'reviews',
-                    localField: '_id',
-                    foreignField: 'serviceId',
-                    as: 'reviews'
-                }
-            },
-            {
-                $lookup: {
-                    from: 'reservations',
-                    localField: '_id',
-                    foreignField: 'serviceId',
-                    as: 'reservations'
-                }
-            },
-            {
-                $addFields: {
-                    averageRating: {
-                        $cond: [
-                            { $gt: [{ $size: '$reviews' }, 0] },
-                            { $avg: '$reviews.rating' },
-                            0
-                        ]
-                    },
-                    totalReservations: { $size: '$reservations' },
-                    status: {
-                        $cond: [
-                            { $eq: ['$isActive', true] },
-                            'active',
-                            'inactive'
-                        ]
-                    }
-                }
-            }
-        ]);
-
-        // 3. Consultations Statistics
-        const consultations = await Consultation.aggregate([
-            {
-                $match: {
-                    assignedExpert: new ObjectId(req.user._id)
-                }
-            },
-            {
-                $facet: {
-                    'stats': [
-                        {
-                            $group: {
-                                _id: null,
-                                total: { $sum: 1 },
-                                paid: {
-                                    $sum: { $cond: [{ $eq: ['$type', 'paid'] }, 1, 0] }
-                                },
-                                free: {
-                                    $sum: { $cond: [{ $eq: ['$type', 'free'] }, 1, 0] }
-                                },
-                                pending: {
-                                    $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
-                                },
-                                inProgress: {
-                                    $sum: { $cond: [{ $eq: ['$status', 'in_progress'] }, 1, 0] }
-                                },
-                                completed: {
-                                    $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] }
-                                }
-                            }
-                        }
-                    ],
-                    'recent': [
-                        { $match: { status: 'pending' } },
-                        { $sort: { createdAt: -1 } },
-                        { $limit: 5 }
-                    ]
-                }
-            }
-        ]);
-
-        // 4. Overall Stats Calculation
-        const stats = {
-            totalServices: services.length,
-            activeServices: services.filter(s => s.status === 'active').length,
-            totalReservations: services.reduce((acc, s) => acc + s.totalReservations, 0),
-            totalRevenue: services.reduce((acc, s) => {
-                const reservationRevenue = s.reservations.reduce((sum, r) => sum + (r.totalAmount || 0), 0);
-                return acc + reservationRevenue;
-            }, 0),
-            averageRating: services.length > 0
-                ? (services.reduce((acc, s) => acc + s.averageRating, 0) / services.length).toFixed(1)
-                : 0,
-            totalReviews: services.reduce((acc, s) => acc + s.reviews.length, 0),
-            consultations: consultations[0].stats[0] || {
-                total: 0, paid: 0, free: 0,
-                pending: 0, inProgress: 0, completed: 0
-            }
-        };
-        const totalViews = services.reduce((acc, s) => acc + (s.views || 0), 0);
-
-        // console.log(totalViews)
-        
-                // Fetch all elevages associated with the user
-                const elevages = await Elevage.find({ userId: req.user._id }).lean();
-                console.log(elevages)
-
-        // Calculate Breeder Statistics
-       // Calculate Breeder Statistics
-const totalPets = elevages.reduce((sum, elevage) => {
-    const totalDogs = elevage.stats?.totalDogs || 0; // Use optional chaining and default to 0
-    return sum + totalDogs;
-}, 0);
-
-const activeLitters = elevages.reduce((sum, elevage) => {
-    const availableDogs = elevage.stats?.availableDogs || 0; // Use optional chaining and default to 0
-    return sum + availableDogs;
-}, 0);
-// Fetch recent activities
-const recentActivities = elevages.flatMap(elevage =>
-    elevage.dogs.map(dog => ({
-        title: `Activity for ${dog.name}`,
-        description: `Status updated to ${dog.status}`,
-        icon: 'fa-paw',
-        timeAgo: '2 hours ago' // Mock time for demonstration
-    }))
-).slice(0, 5);
-        // Placeholder for upcoming events calculation (adjust as per your data model)
-        const upcomingEvents = await Elevage.countDocuments({
-            userId: req.user._id,
-            'dogs.status': { $ne: 'Vendu' }, // Placeholder condition
-        });
-
-        // Get unread requests count
-        const unreadRequests = await Request.countDocuments({
-            serviceProvider: req.user._id,
-            isRead: false
-        });
-        // Render dashboard with all data
-        res.render('user/dashboard/dashboard', {
-            pageTitle: 'dashboard',
-            description: '',
-           
-            specializations,
-            keywords: '',
-            page : 'quick',
-            totalViews,
-            user: {
-                ...req.user.toObject(),
-                completionPercentage: Math.round(completedWeight)
-            },
-            stats,
-            totalPets,
-            activeLitters,
-            upcomingEvents,
-            recentActivities,
-            elevages,
-            missingElements, // Pass missing elements to the template
-            services,
-            recentConsultations: consultations[0].recent,
-            path: 'dashboard'
-        });
-
-    } catch (error) {
-        console.error('Dashboard Error:', error);
-        res.status(500).render('error', { 
-            message: 'Error loading dashboard',
-            error: process.env.NODE_ENV === 'development' ? error : {}
-        });
-    }
-});
+                 services: servicesStats,
+                 reviews: reviewsStats,
+                 elevages: elevagesStats,
+                 consultations: consultationStats,
+                 revenue: {
+                     total: servicesStats.totalRevenue,
+                     currency: 'MAD'
+                 }
+             },
+             // Additional data
+             page: 'quick',
+             path: 'dashboard',
+             specializations: [
+                 { value: 'dog-training', label: 'Dressage', icon: 'fa-dog' },
+                 { value: 'grooming', label: 'Toilettage', icon: 'fa-cut' },
+                 { value: 'walking', label: 'Promenade', icon: 'fa-walking' },
+                 { value: 'veterinary', label: 'Vétérinaire', icon: 'fa-stethoscope' },
+                 { value: 'boarding', label: 'Pension', icon: 'fa-home' },
+                 { value: 'transport', label: 'Transport', icon: 'fa-car' }
+             ]
+         });
+ 
+     } catch (error) {
+         console.error('Dashboard Error:', error);
+         res.status(500).render('error', {
+             message: 'Error loading dashboard',
+             error: process.env.NODE_ENV === 'development' ? error : {}
+         });
+     }
+ });
 
 
 //  Dashboard Consultation

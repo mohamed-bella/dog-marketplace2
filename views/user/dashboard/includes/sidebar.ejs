@@ -1,88 +1,211 @@
 <!-- views/partials/sidebar.ejs -->
-<div class="flex flex-col h-full bg-white">
-    <!-- Logo -->
-    <div class="h-16 flex items-center px-6 border-b border-slate-200/80">
-        <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-yellow-500 to-amber-600">
-            Ndressilik
-        </h1>
+<div class="flex flex-col h-full bg-white border-r border-slate-200">
+    <!-- Logo Section -->
+    <div class="h-16 flex items-center px-6 border-b border-slate-200">
+        <a href="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <h1 class="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600">
+                Ndressilik
+            </h1>
+        </a>
     </div>
 
-    <!-- Navigation -->
-    <nav class="flex-1 py-6 px-3">
-        <div class="space-y-2">
+    <!-- Main Navigation -->
+    <div class="flex-1 flex flex-col px-4 py-6 overflow-y-auto">
+        <!-- Quick Actions -->
+        <div class="space-y-1 mb-6">
             <a href="/dashboard/new-service" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-yellow-50 hover:text-yellow-700 transition-all duration-200">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-yellow-100 text-yellow-600 group-hover:bg-yellow-200 transition-colors">
-                    <i class="fas fa-plus-circle text-lg"></i>
-                </div>
-                <span class="ml-3 font-medium">Ajouter un service</span>
+               class="flex items-center gap-3 px-3 py-2 bg-blue-600 text-white rounded-lg 
+                      hover:bg-blue-700 transition-colors group">
+                <i class="fas fa-plus w-5 text-lg"></i>
+                <span class="font-medium">Nouveau Service</span>
             </a>
-            <a href="/dashboard/breedings" 
-            class="group flex items-center px-4 py-3 rounded-xl text-slate-800 hover:bg-yellow-50 hover:text-yellow-700 transition-all duration-200">
-             <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-yellow-100 text-yellow-700 group-hover:bg-yellow-200 transition-colors">
-                 <i class="fas fa-plus-circle text-lg"></i>
-             </div>
-             <span class="ml-3 font-medium">Ajouter un elevage</span>
-         </a>
-
-            <a href="/dashboard/services" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-purple-50 hover:text-purple-700 transition-all duration-200">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-purple-100 text-purple-600 group-hover:bg-purple-200 transition-colors">
-                    <i class="fas fa-list text-lg"></i>
-                </div>
-                <span class="ml-3 font-medium">Mes services</span>
-            </a>
-
-            <a href="/dashboard/profile" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-blue-50 hover:text-blue-700 transition-all duration-200">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-blue-100 text-blue-600 group-hover:bg-blue-200 transition-colors">
-                    <i class="fas fa-user text-lg"></i>
-                </div>
-                <span class="ml-3 font-medium">Mon profile</span>
-            </a>
-
-            <a href="/dashboard/stats" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 transition-all duration-200">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 group-hover:bg-emerald-200 transition-colors">
-                    <i class="fas fa-chart-line text-lg"></i>
-                </div>
-                <span class="ml-3 font-medium">Statistiques</span>
-            </a>
-
-            <a href="/dashboard/requests" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-amber-50 hover:text-amber-700 transition-all duration-200 relative">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-amber-100 text-amber-600 group-hover:bg-amber-200 transition-colors">
-                    <i class="fas fa-bell text-lg"></i>
-                </div>
-                <span class="ml-3 font-medium">Requests</span>
-                
-                <!-- Notification Dot -->
-                <span class="absolute right-4 flex">
-                    <span class="animate-ping absolute inline-flex h-2.5 w-2.5 rounded-full bg-red-400 opacity-75"></span>
-                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                </span>
-            </a>
-
-            <a href="/dashboard/reviews" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-rose-50 hover:text-rose-700 transition-all duration-200">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-rose-100 text-rose-600 group-hover:bg-rose-200 transition-colors">
-                    <i class="fas fa-star text-lg"></i>
-                </div>
-                <span class="ml-3 font-medium">Reviews</span>
+            <a href="/dashboard/breedings/new" 
+               class="flex items-center gap-3 px-3 py-2 bg-blue-50 text-blue-700 rounded-lg 
+                      hover:bg-blue-100 transition-colors group">
+                <i class="fas fa-paw w-5 text-lg"></i>
+                <span class="font-medium">Nouvel Élevage</span>
             </a>
         </div>
-    </nav>
 
-    <!-- Bottom section -->
-    <div class="p-4 mt-auto">
-        <div class="border-t border-slate-200/80 pt-4">
-            <a href="/logout" 
-               class="group flex items-center px-4 py-3 rounded-xl text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-all duration-200">
-                <div class="w-9 h-9 flex items-center justify-center rounded-lg bg-slate-100 text-slate-600 group-hover:bg-slate-200 transition-colors">
-                    <i class="fas fa-sign-out-alt text-lg"></i>
+        <!-- Main Menu -->
+        <div class="space-y-8">
+            <!-- Dashboard Section -->
+            <div class="space-y-1">
+                <div class="px-3 mb-2">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        Principal
+                    </span>
                 </div>
-                <span class="ml-3 font-medium">Déconnexion</span>
+
+                <a href="/dashboard" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-home w-5 text-slate-400"></i>
+                    <span class="font-medium">Tableau de bord</span>
+                </a>
+                <a href="/dashboard/services" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-list w-5 text-slate-400"></i>
+                    <span class="font-medium">Mes Services</span>
+                </a>
+                <a href="/dashboard/breedings" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-dog w-5 text-slate-400"></i>
+                    <span class="font-medium">Mes Élevages</span>
+                </a>
+                <!-- <a href="/dashboard/calendar" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-calendar w-5 text-slate-400"></i>
+                    <span class="font-medium">Calendrier</span>
+                </a> -->
+            </div>
+
+            <!-- Business Section -->
+            <div class="space-y-1">
+                <div class="px-3 mb-2">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        Gestion
+                    </span>
+                </div>
+
+                <a href="/dashboard/requests" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors relative">
+                    <i class="fas fa-bell w-5 text-slate-400"></i>
+                    <span class="font-medium">Demandes</span>
+                    <!-- Notification Badge -->
+                    <span class="absolute right-3 h-5 w-5 flex items-center justify-center 
+                               bg-red-100 text-red-600 text-xs font-medium rounded-full">
+                        3
+                    </span>
+                </a>
+                <a href="/dashboard/bookings" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-calendar-check w-5 text-slate-400"></i>
+                    <span class="font-medium">Réservations</span>
+                </a>
+                <a href="/dashboard/reviews" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-star w-5 text-slate-400"></i>
+                    <span class="font-medium">Avis Clients</span>
+                </a>
+                <a href="/dashboard/stats" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-chart-line w-5 text-slate-400"></i>
+                    <span class="font-medium">Statistiques</span>
+                </a>
+            </div>
+
+            <!-- Account Section -->
+            <div class="space-y-1">
+                <div class="px-3 mb-2">
+                    <span class="text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                        Compte
+                    </span>
+                </div>
+
+                <a href="/dashboard/profile" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-user w-5 text-slate-400"></i>
+                    <span class="font-medium">Profile</span>
+                </a>
+                <a href="/dashboard/settings" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-cog w-5 text-slate-400"></i>
+                    <span class="font-medium">Paramètres</span>
+                </a>
+                <a href="/dashboard/billing" 
+                   class="flex items-center gap-3 px-3 py-2 text-slate-700 rounded-lg 
+                          hover:bg-slate-50 transition-colors">
+                    <i class="fas fa-credit-card w-5 text-slate-400"></i>
+                    <span class="font-medium">Facturation</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Section -->
+    <div class="p-4 border-t border-slate-200">
+        <!-- User Profile Summary -->
+        <div class="flex items-center gap-3 px-2 mb-4">
+            <img src="<%= user?.profileImage || '/default-avatar.jpg' %>" 
+                 alt="Profile"
+                 class="w-10 h-10 rounded-full object-cover ring-2 ring-white" 
+            />
+            <div class="min-w-0">
+                <div class="text-sm font-medium text-slate-900 truncate">
+                    <%= user?.displayName || 'User Name' %>
+                </div>
+                <div class="text-xs text-slate-500 truncate">
+                    <%= user?.email || 'email@example.com' %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="space-y-2">
+            <a href="/contact" 
+               class="flex items-center gap-3 px-3 py-2 text-slate-600 rounded-lg 
+                      hover:bg-slate-50 transition-colors">
+                <i class="fas fa-question-circle w-5 text-slate-400"></i>
+                <span class="font-medium">Aide</span>
+            </a>
+            <a href="/logout" 
+               class="flex items-center gap-3 px-3 py-2 text-red-600 rounded-lg 
+                      hover:bg-red-50 transition-colors">
+                <i class="fas fa-sign-out-alt w-5"></i>
+                <span class="font-medium">Déconnexion</span>
             </a>
         </div>
     </div>
 </div>
+
+<style>
+/* Smooth scrolling for sidebar */
+.overflow-y-auto {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(203, 213, 225, 0.4) transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+    width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+    background-color: rgba(203, 213, 225, 0.4);
+    border-radius: 6px;
+}
+
+/* Active link styles */
+.active-link {
+    background-color: rgb(241, 245, 249);
+    color: rgb(30, 64, 175);
+}
+
+/* Hover transitions */
+.hover\\:bg-slate-50 {
+    transition: all 0.2s ease;
+}
+
+/* Notification badge animation */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+</style>
